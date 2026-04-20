@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Share+Tech+Mono&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -6,9 +8,49 @@
   * {
     box-sizing: border-box;
   }
-  body {
-    @apply bg-slate-50 text-slate-800 font-sans antialiased;
+
+  :root {
+    --accent-green: #3ddc84;
+    --amber: #f0a500;
+    --teal: #5eead4;
+    --red: #f05555;
+    --purple: #afa9ec;
+    --ink: #1a1a1a;
+    --paper: #f5f3ee;
+    --dark-bg: #0d0d0d;
+    --mid-dark: #111111;
+    --surface-1: #141414;
+    --surface-2: #1a1a1a;
+    --border-1: #222222;
+    --border-2: #2a2a2a;
+    --muted-1: #555555;
+    --muted-2: #888888;
   }
+
+  html,
+  body,
+  #root {
+    min-height: 100%;
+    font-size: 23px;
+    background-color: var(--dark-bg);
+    color: var(--muted-2);
+  }
+
+  body {
+    font-family: 'Caveat', cursive;
+    font-size: 1.5rem;
+    line-height: 1.4;
+    @apply antialiased;
+  }
+
+  code,
+  pre,
+  kbd,
+  samp,
+  .font-mono {
+    font-family: 'Share Tech Mono', monospace !important;
+  }
+
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -19,6 +61,139 @@
   ::-webkit-scrollbar-thumb {
     @apply bg-slate-300 rounded-full;
   }
+}
+
+.bg-slate-50,
+.bg-slate-100,
+.bg-white,
+.bg-indigo-50,
+.bg-slate-900 {
+  background-color: var(--surface-1) !important;
+}
+
+.bg-slate-50 {
+  background-color: var(--mid-dark) !important;
+}
+
+.bg-slate-100,
+.bg-white {
+  background-color: var(--surface-1) !important;
+}
+
+.bg-indigo-50 {
+  background-color: var(--surface-2) !important;
+}
+
+.bg-slate-900 {
+  background-color: var(--dark-bg) !important;
+}
+
+.border-slate-100,
+.border-slate-200,
+.border-slate-300,
+.border-slate-700 {
+  border-color: var(--border-1) !important;
+}
+
+.border-slate-200,
+.border-slate-300,
+.border-slate-700,
+.border-amber-200 {
+  border-color: var(--border-2) !important;
+}
+
+.text-slate-900,
+.text-slate-800,
+.text-slate-100,
+.text-slate-700,
+.text-slate-600,
+.text-slate-500,
+.text-slate-400,
+.text-slate-300,
+.placeholder-slate-400::placeholder {
+  color: var(--muted-2) !important;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.text-slate-900,
+.text-slate-800,
+.font-bold {
+  color: var(--paper) !important;
+}
+
+.text-slate-700,
+.text-slate-600,
+.text-slate-500,
+.text-slate-400,
+.text-slate-300,
+.placeholder-slate-400::placeholder {
+  color: var(--muted-2) !important;
+}
+
+.text-slate-100,
+strong,
+.font-semibold,
+.text-indigo-700,
+.text-indigo-600,
+.text-indigo-500,
+.hover\:text-indigo-700:hover,
+.hover\:text-indigo-600:hover {
+  color: var(--purple) !important;
+}
+
+.bg-indigo-600,
+.bg-indigo-700,
+.hover\:bg-indigo-700:hover {
+  background-color: var(--accent-green) !important;
+}
+
+.hover\:bg-indigo-700:hover {
+  background-color: #2fbf71 !important;
+}
+
+.text-white {
+  color: var(--ink) !important;
+}
+
+.text-blue-500 {
+  color: var(--teal) !important;
+}
+
+.text-amber-500,
+.text-amber-700,
+.text-amber-800,
+.hover\:text-amber-700:hover {
+  color: var(--amber) !important;
+}
+
+.bg-amber-50 {
+  background-color: #2b1f00 !important;
+}
+
+.text-red-400,
+.text-red-500,
+.text-red-700,
+.hover\:text-red-500:hover {
+  color: var(--red) !important;
+}
+
+.bg-red-50 {
+  background-color: #2a1111 !important;
+}
+
+.schema-accent,
+.schema-accent:hover,
+.schema-accent:focus-visible {
+  color: var(--amber) !important;
+}
+
+.schema-accent-bg {
+  background-color: #2b1f00 !important;
 }
 
 @layer utilities {

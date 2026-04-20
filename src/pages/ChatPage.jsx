@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Send, Copy, Check, Database, ChevronRight, Pencil, X, ChevronDown, ChevronUp } from 'lucide-react'
+import { Send, Copy, Check, ChevronRight, Pencil, X, ChevronDown, ChevronUp } from 'lucide-react'
 import { generateQuery } from '../lib/mockAI'
 
 export default function ChatPage({ schema, dialect, onSchemaChange }) {
@@ -92,9 +92,6 @@ export default function ChatPage({ schema, dialect, onSchemaChange }) {
       {/* Topbar */}
       <header className="border-b border-slate-200 bg-white px-6 py-3 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
-          <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center">
-            <Database className="w-3.5 h-3.5 text-white" />
-          </div>
           <button
             type="button"
             onClick={() => navigate('/')}
@@ -107,7 +104,7 @@ export default function ChatPage({ schema, dialect, onSchemaChange }) {
         </div>
         <button
           onClick={goEditSchema}
-          className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-indigo-600 transition-colors"
+          className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-indigo-600 transition-colors schema-accent"
         >
           <Pencil className="w-3.5 h-3.5" />
           Edit schema
@@ -116,8 +113,8 @@ export default function ChatPage({ schema, dialect, onSchemaChange }) {
 
       {/* Schema updated banner */}
       {schemaAlert && (
-        <div className="bg-amber-50 border-b border-amber-200 px-6 py-2 flex items-center justify-between animate-in">
-          <span className="text-sm text-amber-800 font-medium">⚡ Schema updated — context refreshed</span>
+        <div className="bg-amber-50 border-b border-amber-200 px-6 py-2 flex items-center justify-between animate-in schema-accent-bg">
+          <span className="text-sm text-amber-800 font-medium schema-accent">Schema updated - context refreshed</span>
           <button onClick={() => setSchemaAlert(false)} className="text-amber-500 hover:text-amber-700">
             <X className="w-4 h-4" />
           </button>
@@ -129,7 +126,7 @@ export default function ChatPage({ schema, dialect, onSchemaChange }) {
         {sidebarOpen && (
           <aside className="w-56 border-r border-slate-200 bg-white flex flex-col overflow-hidden shrink-0">
             <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
-              <span className="text-xs font-semibold text-slate-500 uppercase tracking-widest">Schema</span>
+              <span className="text-xs font-semibold text-slate-500 uppercase tracking-widest schema-accent">Schema</span>
               <button
                 onClick={() => setSidebarOpen(false)}
                 className="text-slate-400 hover:text-slate-600"
@@ -272,7 +269,7 @@ export default function ChatPage({ schema, dialect, onSchemaChange }) {
               </button>
             </div>
             <p className="text-center text-xs text-slate-400 mt-2">
-              Press Enter to send · queries are generated based on your loaded schema
+              Press Enter to send · queries are generated based on your loaded <span className="schema-accent">schema</span>
             </p>
           </div>
         </div>

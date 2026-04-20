@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Upload, FileCode, AlertCircle, ArrowRight, Database } from 'lucide-react'
+import { Upload, FileCode, AlertCircle, ArrowRight } from 'lucide-react'
 import { parseSchemaFile } from '../lib/schemaParser'
 
 const ACCEPTED = '.sql,.json,.csv'
@@ -42,28 +42,22 @@ export default function LandingPage({ onSchemaLoaded }) {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
-      {/* Header */}
-      <header className="border-b border-slate-200 bg-white px-8 py-4 flex items-center gap-3">
-        <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
-          <Database className="w-4 h-4 text-white" />
-        </div>
-        <button
-          type="button"
-          onClick={() => navigate('/')}
-          className="font-semibold text-slate-800 tracking-tight hover:text-indigo-700 transition-colors"
-        >
-          Querva
-        </button>
-      </header>
-
       {/* Hero */}
       <main className="flex-1 flex flex-col items-center justify-center px-4 py-16">
         <div className="max-w-xl w-full text-center mb-10">
+          <button
+            type="button"
+            onClick={() => navigate('/')}
+            className="font-mono text-6xl md:text-7xl tracking-wide mb-6"
+            style={{ color: 'var(--accent-green)' }}
+          >
+            Querva
+          </button>
           <h1 className="text-4xl font-semibold text-slate-900 tracking-tight mb-3">
             Your AI SQL assistant
           </h1>
           <p className="text-slate-500 text-lg">
-            Upload your database schema and get instant, accurate SQL queries through natural conversation.
+            Upload your database <span className="schema-accent">schema</span> and get instant, accurate SQL queries through natural conversation.
           </p>
         </div>
 
@@ -93,7 +87,7 @@ export default function LandingPage({ onSchemaLoaded }) {
             {loading ? (
               <div className="flex flex-col items-center gap-3">
                 <div className="w-10 h-10 rounded-full border-2 border-indigo-600 border-t-transparent animate-spin" />
-                <p className="text-slate-500 text-sm">Parsing schema…</p>
+                <p className="text-slate-500 text-sm schema-accent">Parsing schema...</p>
               </div>
             ) : (
               <>
@@ -102,7 +96,7 @@ export default function LandingPage({ onSchemaLoaded }) {
                     <Upload className="w-6 h-6 text-indigo-500" />
                   </div>
                 </div>
-                <p className="font-medium text-slate-700 mb-1">
+                <p className="font-medium text-slate-700 mb-1 schema-accent">
                   Drop your schema file here
                 </p>
                 <p className="text-sm text-slate-400">
@@ -130,7 +124,7 @@ export default function LandingPage({ onSchemaLoaded }) {
           {/* Manual entry */}
           <button
             onClick={handleManual}
-            className="w-full flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-3.5 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:border-slate-400 transition-all"
+            className="w-full flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-3.5 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:border-slate-400 transition-all schema-accent"
           >
             <FileCode className="w-4 h-4" />
             Enter schema manually

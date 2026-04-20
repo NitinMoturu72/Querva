@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Trash2, ChevronRight, Database, ArrowRight, Check } from 'lucide-react'
+import { Plus, Trash2, ChevronRight, ArrowRight, Check } from 'lucide-react'
 import { makeTable, makeColumn } from '../lib/schemaParser'
 
 const DIALECTS = ['PostgreSQL', 'MySQL', 'SQLite', 'SQL Server', 'Oracle']
@@ -97,9 +97,6 @@ export default function SchemaPage({ schema, setSchema, dialect, setDialect }) {
       {/* Topbar */}
       <header className="border-b border-slate-200 bg-white px-6 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center">
-            <Database className="w-3.5 h-3.5 text-white" />
-          </div>
           <button
             type="button"
             onClick={() => navigate('/')}
@@ -108,7 +105,7 @@ export default function SchemaPage({ schema, setSchema, dialect, setDialect }) {
             Querva
           </button>
           <ChevronRight className="w-4 h-4 text-slate-300" />
-          <span className="text-sm text-slate-500">Schema editor</span>
+          <span className="text-sm text-slate-500 schema-accent">Schema editor</span>
         </div>
 
         <div className="flex items-center gap-3">
@@ -144,7 +141,7 @@ export default function SchemaPage({ schema, setSchema, dialect, setDialect }) {
         {/* ── Sidebar ── */}
         <aside className="w-60 border-r border-slate-200 bg-white flex flex-col">
           <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-widest">Tables</span>
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-widest schema-accent">Tables</span>
             <button
               onClick={addTable}
               className="w-6 h-6 rounded-md hover:bg-slate-100 flex items-center justify-center transition-colors"
@@ -189,9 +186,6 @@ export default function SchemaPage({ schema, setSchema, dialect, setDialect }) {
         <main className="flex-1 overflow-auto p-6">
           {!selectedTable ? (
             <div className="h-full flex flex-col items-center justify-center text-center">
-              <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
-                <Database className="w-6 h-6 text-slate-400" />
-              </div>
               <p className="text-slate-500 font-medium mb-1">No table selected</p>
               <p className="text-sm text-slate-400">Select a table from the sidebar or create a new one</p>
             </div>
@@ -318,7 +312,7 @@ export default function SchemaPage({ schema, setSchema, dialect, setDialect }) {
                 <div className="px-4 py-3 border-t border-slate-100">
                   <button
                     onClick={addColumn}
-                    className="flex items-center gap-2 text-sm text-indigo-500 hover:text-indigo-700 font-medium transition-colors"
+                    className="flex items-center gap-2 text-sm text-indigo-500 hover:text-indigo-700 font-medium transition-colors schema-accent"
                   >
                     <Plus className="w-4 h-4" />
                     Add column
