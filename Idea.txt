@@ -1,0 +1,17 @@
+1. User landing page
+	Asks user to upload a schema file (in .sql, .json, .csv) formats. or to Manually type the SQL commands like Create Table ()....
+
+Once they upload it we will route them to Chat Page
+	
+2. Chat Page 
+	We say schema loaded using(what we were able to analyze) and give list of tables.
+
+We show the schema as a sidebar.
+
+Depending on the questions we will provide user with queries that they can copy using a single button. 
+
+3. Schema page
+	Initial should show what the user has given us. Each table on the sidebar on the Left and the tables clear schema. And columns type nullable Key default values of each table when selected.
+
+	this should be editable, user should be able to add new tables on the side bar and add columns type nullable Key default values.
+
