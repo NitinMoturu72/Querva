@@ -226,7 +226,7 @@ export default function SchemaPage({ schema, setSchema, dialect, setDialect }) {
                 {selectedTable.columns.map((col, idx) => (
                   <div
                     key={col.id}
-                    className={`grid grid-cols-[2fr_2fr_1fr_1fr_2fr_2fr_40px] gap-2 px-4 py-2 items-center text-sm transition-colors ${idx % 2 === 0 ? '' : 'bg-slate-50/50'} hover:bg-indigo-50/30`}
+                    className={`grid grid-cols-[2fr_2fr_1fr_1fr_2fr_2fr_40px] gap-2 px-4 py-2 items-center text-sm transition-colors ${idx % 2 === 0 ? '' : 'bg-slate-50/50 schema-row-alt'} hover:bg-indigo-50/30`}
                   >
                     {/* Name */}
                     <input

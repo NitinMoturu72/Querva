@@ -1,0 +1,53 @@
+[
+  {
+    "name": "users",
+    "columns": [
+      { "name": "id",         "type": "INT",          "nullable": false, "key": "PK", "default": "" },
+      { "name": "email",      "type": "VARCHAR(255)",  "nullable": false, "key": "none", "default": "" },
+      { "name": "full_name",  "type": "VARCHAR(100)",  "nullable": false, "key": "none", "default": "" },
+      { "name": "created_at", "type": "TIMESTAMP",     "nullable": true,  "key": "none", "default": "CURRENT_TIMESTAMP" },
+      { "name": "is_active",  "type": "BOOLEAN",       "nullable": true,  "key": "none", "default": "true" }
+    ]
+  },
+  {
+    "name": "categories",
+    "columns": [
+      { "name": "id",        "type": "INT",         "nullable": false, "key": "PK",  "default": "" },
+      { "name": "name",      "type": "VARCHAR(100)", "nullable": false, "key": "none","default": "" },
+      { "name": "slug",      "type": "VARCHAR(100)", "nullable": false, "key": "UQ", "default": "" },
+      { "name": "parent_id", "type": "INT",          "nullable": true,  "key": "none","default": "" }
+    ]
+  },
+  {
+    "name": "products",
+    "columns": [
+      { "name": "id",          "type": "INT",          "nullable": false, "key": "PK",  "default": "" },
+      { "name": "category_id", "type": "INT",          "nullable": false, "key": "FK",  "default": "", "references": { "table": "categories", "column": "id" } },
+      { "name": "name",        "type": "VARCHAR(255)", "nullable": false, "key": "none","default": "" },
+      { "name": "description", "type": "TEXT",         "nullable": true,  "key": "none","default": "" },
+      { "name": "price",       "type": "DECIMAL(10,2)","nullable": false, "key": "none","default": "" },
+      { "name": "stock_qty",   "type": "INT",          "nullable": true,  "key": "none","default": "0" },
+      { "name": "created_at",  "type": "TIMESTAMP",    "nullable": true,  "key": "none","default": "CURRENT_TIMESTAMP" }
+    ]
+  },
+  {
+    "name": "orders",
+    "columns": [
+      { "name": "id",         "type": "INT",           "nullable": false, "key": "PK",  "default": "" },
+      { "name": "user_id",    "type": "INT",           "nullable": false, "key": "FK",  "default": "", "references": { "table": "users", "column": "id" } },
+      { "name": "status",     "type": "VARCHAR(50)",   "nullable": true,  "key": "none","default": "pending" },
+      { "name": "total",      "type": "DECIMAL(10,2)", "nullable": false, "key": "none","default": "" },
+      { "name": "created_at", "type": "TIMESTAMP",     "nullable": true,  "key": "none","default": "CURRENT_TIMESTAMP" }
+    ]
+  },
+  {
+    "name": "order_items",
+    "columns": [
+      { "name": "id",         "type": "INT",           "nullable": false, "key": "PK", "default": "" },
+      { "name": "order_id",   "type": "INT",           "nullable": false, "key": "FK", "default": "", "references": { "table": "orders",   "column": "id" } },
+      { "name": "product_id", "type": "INT",           "nullable": false, "key": "FK", "default": "", "references": { "table": "products", "column": "id" } },
+      { "name": "quantity",   "type": "INT",           "nullable": false, "key": "none","default": "" },
+      { "name": "unit_price", "type": "DECIMAL(10,2)", "nullable": false, "key": "none","default": "" }
+    ]
+  }
+]

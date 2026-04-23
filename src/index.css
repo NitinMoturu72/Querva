@@ -196,6 +196,26 @@ strong,
   background-color: #2b1f00 !important;
 }
 
+.schema-row-alt,
+.schema-row-alt span,
+.schema-row-alt input,
+.schema-row-alt select,
+.schema-row-alt option,
+.schema-row-alt .text-slate-900,
+.schema-row-alt .text-slate-800,
+.schema-row-alt .text-slate-700,
+.schema-row-alt .text-slate-600,
+.schema-row-alt .text-slate-500,
+.schema-row-alt .text-slate-400,
+.schema-row-alt .text-slate-300,
+.schema-row-alt .font-mono {
+  color: #000000 !important;
+}
+
+.schema-row-alt input::placeholder {
+  color: #1f2937 !important;
+}
+
 @layer utilities {
   .animate-in {
     animation: fadeSlideIn 0.2s ease-out both;
