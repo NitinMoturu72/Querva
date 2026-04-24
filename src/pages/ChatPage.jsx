@@ -46,10 +46,10 @@ export default function ChatPage({ schema, dialect, onSchemaChange }) {
           query: result.query,
         }
       ])
-    } catch {
+    } catch (err) {
       setMessages(prev => [
         ...prev,
-        { id: (Date.now() + 1).toString(), role: 'assistant', text: 'Something went wrong. Please try again.', query: null }
+        { id: (Date.now() + 1).toString(), role: 'assistant', text: `Error: ${err.message}`, query: null, isError: true }
       ])
     } finally {
       setLoading(false)
@@ -191,7 +191,7 @@ export default function ChatPage({ schema, dialect, onSchemaChange }) {
                 {msg.role === 'assistant' ? (
                   <div className="max-w-2xl space-y-3 animate-in">
                     {/* Text bubble */}
-                    <div className="bg-white border border-slate-200 rounded-2xl rounded-tl-sm px-4 py-3 text-sm text-slate-700 leading-relaxed shadow-sm">
+                    <div className={`border rounded-2xl rounded-tl-sm px-4 py-3 text-sm leading-relaxed shadow-sm ${msg.isError ? 'bg-red-50 border-red-200 text-red-700' : 'bg-white border-slate-200 text-slate-700'}`}>
                       {renderText(msg.text)}
                     </div>
 
@@ -269,7 +269,7 @@ export default function ChatPage({ schema, dialect, onSchemaChange }) {
               </button>
             </div>
             <p className="text-center text-xs text-slate-400 mt-2">
-              Press Enter to send · queries are generated based on your loaded <span className="schema-accent">schema</span>
+              Press Enter to send. Queries are generated based on your loaded <span className="schema-accent">schema</span>
             </p>
           </div>
         </div>
