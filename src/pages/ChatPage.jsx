@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Send, Copy, Check, ChevronRight, Pencil, X, ChevronDown, ChevronUp } from 'lucide-react'
+import { Send, Copy, Check, ChevronRight, Pencil, X, ChevronDown, ChevronUp, Database } from 'lucide-react'
 import { generateQuery } from '../lib/mockAI'
 
 export default function ChatPage({ schema, dialect, onSchemaChange }) {
@@ -87,6 +87,11 @@ export default function ChatPage({ schema, dialect, onSchemaChange }) {
     })
   }
 
+  function handleCloseSidebar() {
+    setSidebarOpen(false)
+    setExpandedTable(null)
+  }
+
   return (
     <div className="h-screen bg-slate-50 flex flex-col overflow-hidden">
       {/* Topbar */}
@@ -128,7 +133,7 @@ export default function ChatPage({ schema, dialect, onSchemaChange }) {
             <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
               <span className="text-xs font-semibold text-slate-500 uppercase tracking-widest schema-accent">Schema</span>
               <button
-                onClick={() => setSidebarOpen(false)}
+                onClick={handleCloseSidebar}
                 className="text-slate-400 hover:text-slate-600"
               >
                 <X className="w-3.5 h-3.5" />
