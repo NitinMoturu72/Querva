@@ -27,7 +27,7 @@ function extractJsonObject(text) {
   }
 }
 
-export async function generateQuery(question, schema, dialect) {
+export async function generateQuery(question, schema, dialect, conversationHistory = []) {
   const apiKey = import.meta.env.VITE_GROQ_API_KEY
   if (!apiKey) {
     throw new Error('No Groq API key found. Add VITE_GROQ_API_KEY to your .env file and restart Vite.')
@@ -51,6 +51,13 @@ export async function generateQuery(question, schema, dialect) {
     schemaDDL || '-- No schema provided --',
   ].join('\n\n')
 
+  // Build messages array: system + conversation history + current question
+  const messagesArray = [
+    { role: 'system', content: systemPrompt },
+    ...conversationHistory,
+    { role: 'user', content: userPrompt },
+  ]
+
   const resp = await fetch(GROQ_API_URL, {
     method: 'POST',
     headers: {
@@ -61,10 +68,7 @@ export async function generateQuery(question, schema, dialect) {
       model: GROQ_MODEL,
       temperature: 0.2,
       response_format: { type: 'json_object' },
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt },
-      ],
+      messages: messagesArray,
     }),
   })
 
@@ -95,4 +99,62 @@ export async function generateQuery(question, schema, dialect) {
 
 export function exportSchemaAsSQL(schema, dialect) {
   return schemaToContext(schema, dialect)
+}
+
+export async function explainQuery(query, schema, dialect, conversationHistory = []) {
+  const apiKey = import.meta.env.VITE_GROQ_API_KEY
+  if (!apiKey) {
+    throw new Error('No Groq API key found. Add VITE_GROQ_API_KEY to your .env file and restart Vite.')
+  }
+
+  const schemaDDL = schemaToContext(schema, dialect)
+
+  const systemPrompt = [
+    'You are a SQL expert explaining queries to non-technical users.',
+    'Explain the given SQL query in clear, simple language.',
+    'Break down what each part does.',
+    'Explain the business logic and intent.',
+    'Do not return JSON, just a clear explanation.',
+  ].join(' ')
+
+  const userPrompt = [
+    `Please explain this SQL query:\n\n${query}`,
+    `\nSchema context:\n${schemaDDL}`,
+  ].join('\n\n')
+
+  // Build messages array with conversation history
+  const messagesArray = [
+    { role: 'system', content: systemPrompt },
+    ...conversationHistory,
+    { role: 'user', content: userPrompt },
+  ]
+
+  const resp = await fetch(GROQ_API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: GROQ_MODEL,
+      temperature: 0.7,
+      messages: messagesArray,
+    }),
+  })
+
+  if (!resp.ok) {
+    let message = `Groq API error (${resp.status})`
+    try {
+      const err = await resp.json()
+      const detail = err?.error?.message
+      if (detail) message = detail
+    } catch { /* ignore */ }
+    throw new Error(message)
+  }
+
+  const data = await resp.json()
+  const explanation = data?.choices?.[0]?.message?.content
+  if (!explanation) throw new Error('Groq returned an empty explanation.')
+
+  return explanation.trim()
 }

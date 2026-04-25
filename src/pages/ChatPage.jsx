@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Send, Copy, Check, ChevronRight, Pencil, X, ChevronDown, ChevronUp, Database } from 'lucide-react'
-import { generateQuery } from '../lib/mockAI'
+import { Send, Copy, Check, ChevronRight, Pencil, X, ChevronDown, ChevronUp, Database, HelpCircle } from 'lucide-react'
+import { generateQuery, explainQuery } from '../lib/mockAI'
 
 export default function ChatPage({ schema, dialect, onSchemaChange }) {
   const navigate = useNavigate()
@@ -19,6 +19,9 @@ export default function ChatPage({ schema, dialect, onSchemaChange }) {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [expandedTable, setExpandedTable] = useState(schema[0]?.id ?? null)
   const [copiedId, setCopiedId] = useState(null)
+  const [explainModalOpen, setExplainModalOpen] = useState(false)
+  const [explanation, setExplanation] = useState('')
+  const [explainLoading, setExplainLoading] = useState(false)
   const bottomRef = useRef(null)
   const inputRef = useRef(null)
 
@@ -36,7 +39,16 @@ export default function ChatPage({ schema, dialect, onSchemaChange }) {
     setLoading(true)
 
     try {
-      const result = await generateQuery(question, schema, dialect)
+      // Get last 8 non-welcome, non-error messages for context
+      const conversationHistory = messages
+        .filter(msg => msg.id !== 'welcome' && !msg.isError)
+        .slice(-8)
+        .map(msg => ({
+          role: msg.role,
+          content: msg.text
+        }))
+
+      const result = await generateQuery(question, schema, dialect, conversationHistory)
       setMessages(prev => [
         ...prev,
         {
@@ -61,6 +73,25 @@ export default function ChatPage({ schema, dialect, onSchemaChange }) {
     navigator.clipboard.writeText(query)
     setCopiedId(id)
     setTimeout(() => setCopiedId(null), 2000)
+  }
+
+  async function handleExplain(query) {
+    setExplainModalOpen(true)
+    setExplainLoading(true)
+    try {
+      const conversationHistory = messages
+        .filter(msg => msg.id !== 'welcome' && !msg.isError)
+        .map(msg => ({
+          role: msg.role,
+          content: msg.text
+        }))
+      const result = await explainQuery(query, schema, dialect, conversationHistory)
+      setExplanation(result)
+    } catch (err) {
+      setExplanation(`Error: ${err.message}`)
+    } finally {
+      setExplainLoading(false)
+    }
   }
 
   // Called from schema sidebar edit navigation
@@ -205,19 +236,27 @@ export default function ChatPage({ schema, dialect, onSchemaChange }) {
                       <div className="bg-slate-900 rounded-2xl overflow-hidden shadow-sm">
                         <div className="flex items-center justify-between px-4 py-2 border-b border-slate-700">
                           <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">SQL · {dialect}</span>
-                          <button
-                            onClick={() => copyQuery(msg.id, msg.query)}
-                            className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg transition-all font-medium ${
-                              copiedId === msg.id
-                                ? 'bg-emerald-500/20 text-emerald-400'
-                                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                            }`}
-                          >
-                            {copiedId === msg.id
-                              ? <><Check className="w-3 h-3" /> Copied!</>
-                              : <><Copy className="w-3 h-3" /> Copy</>
-                            }
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleExplain(msg.query)}
+                              className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg transition-all font-medium bg-slate-700 text-slate-300 hover:bg-slate-600"
+                            >
+                              <HelpCircle className="w-3 h-3" /> Explain
+                            </button>
+                            <button
+                              onClick={() => copyQuery(msg.id, msg.query)}
+                              className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg transition-all font-medium ${
+                                copiedId === msg.id
+                                  ? 'bg-emerald-500/20 text-emerald-400'
+                                  : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                              }`}
+                            >
+                              {copiedId === msg.id
+                                ? <><Check className="w-3 h-3" /> Copied!</>
+                                : <><Copy className="w-3 h-3" /> Copy</>
+                              }
+                            </button>
+                          </div>
                         </div>
                         <pre className="px-4 py-3 text-sm font-mono text-slate-100 overflow-x-auto leading-relaxed">
                           <code>{msg.query}</code>
@@ -279,6 +318,51 @@ export default function ChatPage({ schema, dialect, onSchemaChange }) {
           </div>
         </div>
       </div>
+
+      {/* Explain Modal */}
+      {explainModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-hidden flex flex-col">
+            {/* Modal header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 shrink-0">
+              <h2 className="text-lg font-semibold text-slate-800">Query Explanation</h2>
+              <button
+                onClick={() => setExplainModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal content */}
+            <div className="flex-1 overflow-y-auto px-6 py-4">
+              {explainLoading ? (
+                <div className="flex items-center justify-center h-32">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-slate-400 animate-bounce" />
+                    <span className="w-2 h-2 rounded-full bg-slate-400 animate-bounce [animation-delay:0.15s]" />
+                    <span className="w-2 h-2 rounded-full bg-slate-400 animate-bounce [animation-delay:0.3s]" />
+                  </div>
+                </div>
+              ) : (
+                <div className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
+                  {explanation}
+                </div>
+              )}
+            </div>
+
+            {/* Modal footer */}
+            <div className="px-6 py-4 border-t border-slate-200 flex justify-end gap-2 shrink-0">
+              <button
+                onClick={() => setExplainModalOpen(false)}
+                className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors font-medium text-sm"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
