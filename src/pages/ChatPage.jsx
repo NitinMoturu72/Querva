@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Send, Copy, Check, ChevronRight, Pencil, X, ChevronDown, ChevronUp, Database, HelpCircle } from 'lucide-react'
 import { generateQuery, explainQuery } from '../lib/mockAI'
+import { extractConversationHistory } from '../../shared/messageUtils'
 
 export default function ChatPage({ schema, dialect, onSchemaChange }) {
   const navigate = useNavigate()
@@ -40,13 +41,7 @@ export default function ChatPage({ schema, dialect, onSchemaChange }) {
 
     try {
       // Get last 8 non-welcome, non-error messages for context
-      const conversationHistory = messages
-        .filter(msg => msg.id !== 'welcome' && !msg.isError)
-        .slice(-8)
-        .map(msg => ({
-          role: msg.role,
-          content: msg.text
-        }))
+      const conversationHistory = extractConversationHistory(messages, 8)
 
       const result = await generateQuery(question, schema, dialect, conversationHistory)
       setMessages(prev => [
@@ -79,12 +74,7 @@ export default function ChatPage({ schema, dialect, onSchemaChange }) {
     setExplainModalOpen(true)
     setExplainLoading(true)
     try {
-      const conversationHistory = messages
-        .filter(msg => msg.id !== 'welcome' && !msg.isError)
-        .map(msg => ({
-          role: msg.role,
-          content: msg.text
-        }))
+      const conversationHistory = extractConversationHistory(messages)
       const result = await explainQuery(query, schema, dialect, conversationHistory)
       setExplanation(result)
     } catch (err) {
