@@ -25,6 +25,7 @@ export default function SchemaPage({ schema, setSchema, dialect, setDialect }) {
     location.state?.conversationName || ''
   )
   const [starting, setStarting] = useState(false)
+  const [startError, setStartError] = useState(null)
 
   const selectedTable = schema.find(t => t.id === selectedId) ?? null
 
@@ -104,6 +105,7 @@ export default function SchemaPage({ schema, setSchema, dialect, setDialect }) {
 
   async function handleStartChatting() {
     if (!canChat || starting) return
+    setStartError(null)
 
     // For logged-in users starting a brand new conversation, create it in DB now
     if (isLoggedIn && !currentConversationId) {
@@ -112,7 +114,9 @@ export default function SchemaPage({ schema, setSchema, dialect, setDialect }) {
         const name = conversationName.trim() || `Chat - ${new Date().toLocaleDateString()}`
         await createConversation(name, dialect, schema)
       } catch (err) {
-        console.error('Failed to create conversation:', err)
+        setStarting(false)
+        setStartError(err.message)
+        return
       }
       setStarting(false)
     }
@@ -163,6 +167,10 @@ export default function SchemaPage({ schema, setSchema, dialect, setDialect }) {
               placeholder="Name this chat…"
               className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 bg-white text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent w-44"
             />
+          )}
+
+          {startError && (
+            <p className="text-xs text-red-500 max-w-xs text-right">{startError}</p>
           )}
 
           <button

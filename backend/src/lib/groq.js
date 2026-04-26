@@ -72,7 +72,8 @@ async function callGroq(messages, options = {}) {
   const content = data?.choices?.[0]?.message?.content
   if (!content) throw new Error('Groq returned an empty response.')
 
-  return content
+  const tokensUsed = data?.usage?.total_tokens ?? 0
+  return { content, tokensUsed }
 }
 
 module.exports = {

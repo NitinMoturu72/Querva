@@ -139,6 +139,18 @@ export async function getConversation(conversationId) {
   return data
 }
 
+export async function deleteConversation(conversationId) {
+  const resp = await fetch(`${API_BASE}/conversations/${conversationId}`, {
+    method: 'DELETE',
+    headers: getHeaders(),
+  })
+  if (!resp.ok) {
+    const err = await resp.json()
+    throw new Error(err.error || 'Failed to delete conversation')
+  }
+  return resp.json()
+}
+
 export function exportSchemaAsSQL(schema, dialect) {
   return schemaToContext(schema, dialect)
 }

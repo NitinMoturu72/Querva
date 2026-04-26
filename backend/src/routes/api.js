@@ -1,6 +1,7 @@
 const express = require('express')
 const { schemaToContext, extractJsonObject, callGroq } = require('../lib/groq')
 const { optionalAuthMiddleware } = require('../middleware/auth')
+const { rateLimitMiddleware } = require('../middleware/rateLimit')
 const { getOne, insert } = require('../lib/dbUtils')
 
 const router = express.Router()
@@ -20,7 +21,7 @@ const router = express.Router()
  *   "conversationId": "..." (optional - if saving to conversation)
  * }
  */
-router.post('/query', optionalAuthMiddleware, async (req, res) => {
+router.post('/query', optionalAuthMiddleware, rateLimitMiddleware, async (req, res) => {
   try {
     const userId = req.user?.userId
     const { question, schema, dialect, conversationHistory, conversationId } = req.body
@@ -64,12 +65,15 @@ router.post('/query', optionalAuthMiddleware, async (req, res) => {
       { role: 'user', content: userPrompt },
     ]
 
-    const content = await callGroq(messagesArray, { temperature: 0.2, returnJson: true })
+    const { content, tokensUsed } = await callGroq(messagesArray, { temperature: 0.2, returnJson: true })
     const parsed = extractJsonObject(content)
 
     if (!parsed || typeof parsed.message !== 'string' || typeof parsed.query !== 'string') {
       throw new Error('Groq response was not valid JSON with message and query fields.')
     }
+
+    // Log usage for rate limiting (non-blocking)
+    if (req.logUsage) req.logUsage(tokensUsed, '/api/query').catch(console.error)
 
     // Save to database if user is authenticated and conversationId provided
     if (userId && conversationId) {
@@ -116,7 +120,7 @@ router.post('/query', optionalAuthMiddleware, async (req, res) => {
  *   "conversationId": "..." (optional)
  * }
  */
-router.post('/explain', optionalAuthMiddleware, async (req, res) => {
+router.post('/explain', optionalAuthMiddleware, rateLimitMiddleware, async (req, res) => {
   try {
     const userId = req.user?.userId
     const { query, schema, dialect, conversationHistory, conversationId } = req.body
@@ -157,7 +161,10 @@ router.post('/explain', optionalAuthMiddleware, async (req, res) => {
       { role: 'user', content: userPrompt },
     ]
 
-    const explanation = await callGroq(messagesArray, { temperature: 0.7, returnJson: false })
+    const { content: explanation, tokensUsed } = await callGroq(messagesArray, { temperature: 0.7, returnJson: false })
+
+    // Log usage for rate limiting (non-blocking)
+    if (req.logUsage) req.logUsage(tokensUsed, '/api/explain').catch(console.error)
 
     // Save to database if user is authenticated and conversationId provided
     if (userId && conversationId) {

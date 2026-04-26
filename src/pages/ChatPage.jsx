@@ -84,7 +84,7 @@ export default function ChatPage({ schema, dialect, onSchemaChange }) {
 
     try {
       // Get last 8 non-welcome, non-error messages for context
-      const conversationHistory = extractConversationHistory(messages, 8)
+      const conversationHistory = extractConversationHistory(messages, 5)
 
       const result = await generateQuery(question, schema, dialect, conversationHistory, currentConversationId)
       setMessages(prev => [

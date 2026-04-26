@@ -80,6 +80,18 @@ router.post('/', authMiddleware, async (req, res) => {
       return res.status(400).json({ error: 'Name and dialect required' })
     }
 
+    // Enforce 5-conversation limit
+    const countRow = await getOne(
+      'SELECT COUNT(*)::INTEGER AS count FROM conversations WHERE user_id = $1',
+      [userId]
+    )
+    if (countRow.count >= 5) {
+      return res.status(400).json({
+        error: 'Conversation limit reached. You can save up to 5 conversations. Delete one to make room.',
+        code: 'CONVERSATION_LIMIT',
+      })
+    }
+
     // Create conversation
     const conversation = await insert(
       `INSERT INTO conversations (user_id, name, dialect)
@@ -195,6 +207,29 @@ router.get('/:conversationId', authMiddleware, async (req, res) => {
   } catch (err) {
     console.error('Get conversation error:', err)
     res.status(500).json({ error: 'Failed to fetch conversation' })
+  }
+})
+
+router.delete('/:conversationId', authMiddleware, async (req, res) => {
+  try {
+    const { userId } = req.user
+    const { conversationId } = req.params
+
+    const conversation = await getOne(
+      'SELECT id FROM conversations WHERE id = $1 AND user_id = $2',
+      [conversationId, userId]
+    )
+    if (!conversation) {
+      return res.status(404).json({ error: 'Conversation not found' })
+    }
+
+    // FK CASCADE handles messages, schema_tables, and columns
+    await execute('DELETE FROM conversations WHERE id = $1', [conversationId])
+
+    res.json({ success: true })
+  } catch (err) {
+    console.error('Delete conversation error:', err)
+    res.status(500).json({ error: 'Failed to delete conversation' })
   }
 })
 

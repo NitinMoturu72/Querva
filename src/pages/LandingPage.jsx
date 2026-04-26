@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Upload, FileCode, AlertCircle, ArrowRight, MessageSquare, Loader } from 'lucide-react'
+import { Upload, FileCode, AlertCircle, ArrowRight, MessageSquare, Loader, Trash2 } from 'lucide-react'
 import { parseSchemaFile } from '../lib/schemaParser'
+import { deleteConversation } from '../lib/mockAI'
 import { useAuth } from '../context/AuthContext'
 import { useConversation } from '../context/ConversationContext'
 
@@ -26,7 +27,10 @@ export default function LandingPage({ onSchemaLoaded, onConversationLoaded }) {
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(false)
   const [convsLoading, setConvsLoading] = useState(false)
-  const [resuming, setResuming] = useState(null) // conversation id being loaded
+  const [resuming, setResuming] = useState(null)
+  const [deleting, setDeleting] = useState(null)
+
+  const atLimit = conversations.length >= 5
 
   useEffect(() => {
     if (!isLoggedIn) return
@@ -60,6 +64,19 @@ export default function LandingPage({ onSchemaLoaded, onConversationLoaded }) {
   function handleManual() {
     onSchemaLoaded([])
     navigate('/schema')
+  }
+
+  async function handleDeleteConversation(e, conversationId) {
+    e.stopPropagation()
+    setDeleting(conversationId)
+    try {
+      await deleteConversation(conversationId)
+      await loadConversations()
+    } catch (err) {
+      setError('Failed to delete conversation.')
+    } finally {
+      setDeleting(null)
+    }
   }
 
   async function handleResumeConversation(conversationId) {
@@ -182,30 +199,52 @@ export default function LandingPage({ onSchemaLoaded, onConversationLoaded }) {
               </div>
             ) : conversations.length > 0 ? (
               <div>
-                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 text-center">
-                  Continue a conversation
-                </p>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                    Continue a conversation
+                  </p>
+                  {atLimit && (
+                    <p className="text-xs text-amber-600 font-medium">
+                      5/5 — delete one to start a new chat
+                    </p>
+                  )}
+                </div>
                 <div className="space-y-2">
                   {conversations.map(conv => (
-                    <button
+                    <div
                       key={conv.id}
-                      onClick={() => handleResumeConversation(conv.id)}
-                      disabled={!!resuming}
-                      className="w-full flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-left hover:border-indigo-300 hover:bg-indigo-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="group w-full flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 hover:border-indigo-300 hover:bg-indigo-50 transition-all"
                     >
-                      {resuming === conv.id ? (
-                        <Loader className="w-4 h-4 text-indigo-500 animate-spin shrink-0" />
-                      ) : (
-                        <MessageSquare className="w-4 h-4 text-slate-400 shrink-0" />
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-slate-700 truncate">{conv.name}</p>
-                        <p className="text-xs text-slate-400">
-                          {conv.dialect} · {conv.message_count} message{conv.message_count !== 1 ? 's' : ''}
-                        </p>
-                      </div>
-                      <ArrowRight className="w-4 h-4 text-slate-300 shrink-0" />
-                    </button>
+                      <button
+                        onClick={() => handleResumeConversation(conv.id)}
+                        disabled={!!resuming || !!deleting}
+                        className="flex items-center gap-3 flex-1 min-w-0 text-left disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {resuming === conv.id ? (
+                          <Loader className="w-4 h-4 text-indigo-500 animate-spin shrink-0" />
+                        ) : (
+                          <MessageSquare className="w-4 h-4 text-slate-400 shrink-0" />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-slate-700 truncate">{conv.name}</p>
+                          <p className="text-xs text-slate-400">
+                            {conv.dialect} · {conv.message_count} message{conv.message_count !== 1 ? 's' : ''}
+                          </p>
+                        </div>
+                        <ArrowRight className="w-4 h-4 text-slate-300 shrink-0" />
+                      </button>
+                      <button
+                        onClick={(e) => handleDeleteConversation(e, conv.id)}
+                        disabled={!!deleting || !!resuming}
+                        className="opacity-0 group-hover:opacity-100 w-7 h-7 flex items-center justify-center rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all shrink-0 disabled:cursor-not-allowed"
+                        title="Delete conversation"
+                      >
+                        {deleting === conv.id
+                          ? <Loader className="w-3.5 h-3.5 animate-spin" />
+                          : <Trash2 className="w-3.5 h-3.5" />
+                        }
+                      </button>
+                    </div>
                   ))}
                 </div>
               </div>
