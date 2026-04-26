@@ -1,6 +1,6 @@
 const express = require('express')
 const { schemaToContext, extractJsonObject, callGroq } = require('../lib/groq')
-const { authMiddleware } = require('../middleware/auth')
+const { optionalAuthMiddleware } = require('../middleware/auth')
 const { getOne, insert } = require('../lib/dbUtils')
 
 const router = express.Router()
@@ -20,9 +20,9 @@ const router = express.Router()
  *   "conversationId": "..." (optional - if saving to conversation)
  * }
  */
-router.post('/query', authMiddleware, async (req, res) => {
+router.post('/query', optionalAuthMiddleware, async (req, res) => {
   try {
-    const { userId } = req.user
+    const userId = req.user?.userId
     const { question, schema, dialect, conversationHistory, conversationId } = req.body
 
     if (!question || !schema || !dialect) {
@@ -30,7 +30,7 @@ router.post('/query', authMiddleware, async (req, res) => {
     }
 
     // If conversationId provided, verify it belongs to user
-    if (conversationId) {
+    if (conversationId && userId) {
       const conversation = await getOne(
         'SELECT id FROM conversations WHERE id = $1 AND user_id = $2',
         [conversationId, userId]
@@ -71,8 +71,8 @@ router.post('/query', authMiddleware, async (req, res) => {
       throw new Error('Groq response was not valid JSON with message and query fields.')
     }
 
-    // Save to database if conversationId provided
-    if (conversationId) {
+    // Save to database if user is authenticated and conversationId provided
+    if (userId && conversationId) {
       // Save user question
       await insert(
         'INSERT INTO messages (conversation_id, role, content) VALUES ($1, $2, $3)',
@@ -116,9 +116,9 @@ router.post('/query', authMiddleware, async (req, res) => {
  *   "conversationId": "..." (optional)
  * }
  */
-router.post('/explain', authMiddleware, async (req, res) => {
+router.post('/explain', optionalAuthMiddleware, async (req, res) => {
   try {
-    const { userId } = req.user
+    const userId = req.user?.userId
     const { query, schema, dialect, conversationHistory, conversationId } = req.body
 
     if (!query || !schema || !dialect) {
@@ -126,7 +126,7 @@ router.post('/explain', authMiddleware, async (req, res) => {
     }
 
     // Verify conversation if provided
-    if (conversationId) {
+    if (conversationId && userId) {
       const conversation = await getOne(
         'SELECT id FROM conversations WHERE id = $1 AND user_id = $2',
         [conversationId, userId]
@@ -159,8 +159,8 @@ router.post('/explain', authMiddleware, async (req, res) => {
 
     const explanation = await callGroq(messagesArray, { temperature: 0.7, returnJson: false })
 
-    // Save to database if conversationId provided
-    if (conversationId) {
+    // Save to database if user is authenticated and conversationId provided
+    if (userId && conversationId) {
       await insert(
         'INSERT INTO messages (conversation_id, role, content) VALUES ($1, $2, $3)',
         [conversationId, 'user', `Explain: ${query}`]

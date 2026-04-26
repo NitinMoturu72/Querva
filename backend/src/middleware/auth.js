@@ -38,6 +38,23 @@ function authMiddleware(req, res, next) {
   }
 }
 
+function optionalAuthMiddleware(req, res, next) {
+  const authHeader = req.headers.authorization
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    req.user = null
+    return next()
+  }
+  try {
+    const token = authHeader.slice(7)
+    const decoded = verifyToken(token)
+    req.user = { userId: decoded.userId }
+  } catch {
+    req.user = null
+  }
+  next()
+}
+
 module.exports = {
   authMiddleware,
+  optionalAuthMiddleware,
 }

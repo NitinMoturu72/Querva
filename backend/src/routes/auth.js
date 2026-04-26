@@ -2,6 +2,7 @@ const express = require('express')
 const { getOne, insert, execute } = require('../lib/dbUtils')
 const { hashPassword, verifyPassword } = require('../lib/password')
 const { generateAccessToken, generateRefreshToken } = require('../lib/jwt')
+const { authMiddleware } = require('../middleware/auth')
 
 const router = express.Router()
 
@@ -139,13 +140,16 @@ router.post('/login', async (req, res) => {
  *   "user": { "id": "...", "email": "...", "name": "..." }
  * }
  */
-router.get('/me', async (req, res) => {
+router.get('/me', authMiddleware, async (req, res) => {
   try {
-    const { authMiddleware } = require('../middleware/auth')
-
-    // This route should use the middleware, but for now we'll handle it here
-    // We'll refactor this after you review
-    res.json({ message: 'This endpoint needs the middleware applied in the main router' })
+    const user = await getOne(
+      'SELECT id, email, name FROM users WHERE id = $1',
+      [req.user.userId]
+    )
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' })
+    }
+    res.json({ user: { id: user.id, email: user.email, name: user.name } })
   } catch (err) {
     console.error('Me error:', err)
     res.status(500).json({ error: 'Failed to get user' })

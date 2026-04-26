@@ -1,22 +1,41 @@
 import { useState, useRef, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Send, Copy, Check, ChevronRight, Pencil, X, ChevronDown, ChevronUp, Database, HelpCircle } from 'lucide-react'
+import { useNavigate, useLocation } from 'react-router-dom'
+import { Send, Copy, Check, ChevronRight, ChevronDown, ChevronUp, Pencil, X, Database, HelpCircle, LogOut, LogIn } from 'lucide-react'
 import { generateQuery, explainQuery } from '../lib/mockAI'
 import { extractConversationHistory } from '../../shared/messageUtils'
+import { useAuth } from '../context/AuthContext'
+import { useConversation } from '../context/ConversationContext'
+
+function buildWelcome(schema) {
+  return {
+    id: 'welcome',
+    role: 'assistant',
+    text: `Schema loaded — I found **${schema.length} table${schema.length !== 1 ? 's' : ''}**: ${schema.map(t => `\`${t.name}\``).join(', ')}.\n\nAsk me anything — "select all users", "join orders and products", "count rows grouped by status", and so on.`,
+    query: null,
+  }
+}
+
+function mapApiMessages(apiMessages) {
+  return (apiMessages || []).map(m => ({
+    id: m.id,
+    role: m.role,
+    text: m.content,
+    query: m.sql_query || null,
+  }))
+}
 
 export default function ChatPage({ schema, dialect, onSchemaChange }) {
   const navigate = useNavigate()
-  const [messages, setMessages] = useState([
-    {
-      id: 'welcome',
-      role: 'assistant',
-      text: `Schema loaded — I found **${schema.length} table${schema.length !== 1 ? 's' : ''}**: ${schema.map(t => `\`${t.name}\``).join(', ')}.\n\nAsk me anything — "select all users", "join orders and products", "count rows grouped by status", and so on.`,
-      query: null,
-    }
-  ])
+  const location = useLocation()
+  const { logout, user } = useAuth()
+  const { currentConversationId, loadConversations } = useConversation()
+  const conversationName = location.state?.conversationName || ''
+  const [messages, setMessages] = useState(() => {
+    const restored = location.state?.restoredMessages
+    return restored?.length > 0 ? restored : [buildWelcome(schema)]
+  })
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
-  const [schemaAlert, setSchemaAlert] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [expandedTable, setExpandedTable] = useState(schema[0]?.id ?? null)
   const [copiedId, setCopiedId] = useState(null)
@@ -25,10 +44,34 @@ export default function ChatPage({ schema, dialect, onSchemaChange }) {
   const [explainLoading, setExplainLoading] = useState(false)
   const bottomRef = useRef(null)
   const inputRef = useRef(null)
+  const isFirstSchemaRender = useRef(true)
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  // Load conversations on mount
+  useEffect(() => {
+    loadConversations()
+  }, [])
+
+  // Add system message when schema is updated (skip on initial mount)
+  useEffect(() => {
+    if (isFirstSchemaRender.current) {
+      isFirstSchemaRender.current = false
+      return
+    }
+    setMessages(prev => {
+      if (prev[prev.length - 1]?.id === 'schema-updated') return prev
+      return [...prev, {
+        id: 'schema-updated',
+        role: 'system',
+        text: 'ℹ️ Schema has been updated. Your previous queries may no longer be valid.',
+        query: null,
+      }]
+    })
+  }, [schema])
+
 
   async function sendMessage() {
     const question = input.trim()
@@ -43,7 +86,7 @@ export default function ChatPage({ schema, dialect, onSchemaChange }) {
       // Get last 8 non-welcome, non-error messages for context
       const conversationHistory = extractConversationHistory(messages, 8)
 
-      const result = await generateQuery(question, schema, dialect, conversationHistory)
+      const result = await generateQuery(question, schema, dialect, conversationHistory, currentConversationId)
       setMessages(prev => [
         ...prev,
         {
@@ -84,9 +127,21 @@ export default function ChatPage({ schema, dialect, onSchemaChange }) {
     }
   }
 
-  // Called from schema sidebar edit navigation
   function goEditSchema() {
-    navigate('/schema')
+    navigate('/schema', { state: { restoredMessages: messages, conversationName } })
+  }
+
+  /**
+   * Handle switching to a different conversation
+   */
+/**
+   * Handle logout with conversation naming:
+   * - If messages exist (beyond welcome): show naming modal
+   * - If only schema or nothing: just logout
+   */
+  function handleLogout() {
+    logout()
+    navigate('/')
   }
 
   // Render message text with basic **bold** and `code` support
@@ -126,26 +181,42 @@ export default function ChatPage({ schema, dialect, onSchemaChange }) {
             Querva
           </button>
           <ChevronRight className="w-4 h-4 text-slate-300" />
-          <span className="text-sm text-slate-500">Chat · {dialect}</span>
+
+          <span className="text-sm text-slate-500">{conversationName || 'New Chat'}</span>
+
+          <span className="text-sm text-slate-400">·</span>
+          <span className="text-sm text-slate-500">{dialect}</span>
         </div>
-        <button
-          onClick={goEditSchema}
-          className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-indigo-600 transition-colors schema-accent"
-        >
-          <Pencil className="w-3.5 h-3.5" />
-          Edit schema
-        </button>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={goEditSchema}
+            className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-indigo-600 transition-colors schema-accent"
+          >
+            <Pencil className="w-3.5 h-3.5" />
+            Edit schema
+          </button>
+
+          {/* Login/Logout button - conditional based on auth state */}
+          {!user ? (
+            <button
+              onClick={() => navigate('/auth')}
+              className="flex items-center gap-2 px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium text-sm"
+            >
+              <LogIn className="w-4 h-4" />
+              Login
+            </button>
+          ) : (
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 px-3 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors font-medium text-sm"
+            >
+              <LogOut className="w-4 h-4" />
+              Logout
+            </button>
+          )}
+        </div>
       </header>
 
-      {/* Schema updated banner */}
-      {schemaAlert && (
-        <div className="bg-amber-50 border-b border-amber-200 px-6 py-2 flex items-center justify-between animate-in schema-accent-bg">
-          <span className="text-sm text-amber-800 font-medium schema-accent">Schema updated - context refreshed</span>
-          <button onClick={() => setSchemaAlert(false)} className="text-amber-500 hover:text-amber-700">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-      )}
 
       <div className="flex flex-1 overflow-hidden">
         {/* ── Schema sidebar (read-only) ── */}
@@ -214,7 +285,11 @@ export default function ChatPage({ schema, dialect, onSchemaChange }) {
                 key={msg.id}
                 className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
-                {msg.role === 'assistant' ? (
+                {msg.role === 'system' ? (
+                  <div className="max-w-2xl px-4 py-2 text-xs text-slate-500 text-center italic">
+                    {msg.text}
+                  </div>
+                ) : msg.role === 'assistant' ? (
                   <div className="max-w-2xl space-y-3 animate-in">
                     {/* Text bubble */}
                     <div className={`border rounded-2xl rounded-tl-sm px-4 py-3 text-sm leading-relaxed shadow-sm ${msg.isError ? 'bg-red-50 border-red-200 text-red-700' : 'bg-white border-slate-200 text-slate-700'}`}>
@@ -353,6 +428,7 @@ export default function ChatPage({ schema, dialect, onSchemaChange }) {
           </div>
         </div>
       )}
+
     </div>
   )
 }

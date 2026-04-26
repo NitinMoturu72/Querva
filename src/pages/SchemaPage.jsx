@@ -1,7 +1,10 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Plus, Trash2, ChevronRight, ArrowRight, Check } from 'lucide-react'
+import { useNavigate, useLocation } from 'react-router-dom'
+import { Plus, Trash2, ChevronRight, ArrowRight } from 'lucide-react'
 import { makeTable, makeColumn } from '../lib/schemaParser'
+import LoginButton from '../components/LoginButton'
+import { useAuth } from '../context/AuthContext'
+import { useConversation } from '../context/ConversationContext'
 
 const DIALECTS = ['PostgreSQL', 'MySQL', 'SQLite', 'SQL Server', 'Oracle']
 const COL_TYPES = [
@@ -14,7 +17,14 @@ const KEY_OPTIONS = ['none', 'PK', 'FK', 'UQ']
 
 export default function SchemaPage({ schema, setSchema, dialect, setDialect }) {
   const navigate = useNavigate()
+  const location = useLocation()
+  const { isLoggedIn } = useAuth()
+  const { createConversation, currentConversationId } = useConversation()
   const [selectedId, setSelectedId] = useState(schema[0]?.id ?? null)
+  const [conversationName, setConversationName] = useState(
+    location.state?.conversationName || ''
+  )
+  const [starting, setStarting] = useState(false)
 
   const selectedTable = schema.find(t => t.id === selectedId) ?? null
 
@@ -92,6 +102,29 @@ export default function SchemaPage({ schema, setSchema, dialect, setDialect }) {
 
   const canChat = schema.length > 0
 
+  async function handleStartChatting() {
+    if (!canChat || starting) return
+
+    // For logged-in users starting a brand new conversation, create it in DB now
+    if (isLoggedIn && !currentConversationId) {
+      setStarting(true)
+      try {
+        const name = conversationName.trim() || `Chat - ${new Date().toLocaleDateString()}`
+        await createConversation(name, dialect, schema)
+      } catch (err) {
+        console.error('Failed to create conversation:', err)
+      }
+      setStarting(false)
+    }
+
+    navigate('/chat', {
+      state: {
+        conversationName,
+        restoredMessages: location.state?.restoredMessages,
+      },
+    })
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
       {/* Topbar */}
@@ -121,9 +154,20 @@ export default function SchemaPage({ schema, setSchema, dialect, setDialect }) {
             </select>
           </div>
 
+          {/* Conversation name (logged-in users only) */}
+          {isLoggedIn && (
+            <input
+              type="text"
+              value={conversationName}
+              onChange={e => setConversationName(e.target.value)}
+              placeholder="Name this chat…"
+              className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 bg-white text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent w-44"
+            />
+          )}
+
           <button
-            onClick={() => canChat && navigate('/chat')}
-            disabled={!canChat}
+            onClick={handleStartChatting}
+            disabled={!canChat || starting}
             className={`
               flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all
               ${canChat
@@ -131,9 +175,11 @@ export default function SchemaPage({ schema, setSchema, dialect, setDialect }) {
                 : 'bg-slate-100 text-slate-400 cursor-not-allowed'}
             `}
           >
-            Start chatting
+            {starting ? 'Starting…' : 'Start chatting'}
             <ArrowRight className="w-4 h-4" />
           </button>
+
+          <LoginButton />
         </div>
       </header>
 

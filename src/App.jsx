@@ -1,18 +1,37 @@
-import { Routes, Route, Navigate, useNavigate } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import { useState } from 'react'
 import LandingPage from './pages/LandingPage'
 import SchemaPage from './pages/SchemaPage'
 import ChatPage from './pages/ChatPage'
+import AuthPage from './pages/AuthPage'
+import { ConversationProvider } from './context/ConversationContext'
+import { useAuth } from './context/AuthContext'
 
 export default function App() {
+  const { loading } = useAuth()
   const [schema, setSchema] = useState([])
   const [dialect, setDialect] = useState('PostgreSQL')
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+        <div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: 'var(--accent-green)', borderTopColor: 'transparent' }} />
+      </div>
+    )
+  }
+
   return (
-    <Routes>
+    <ConversationProvider>
+      <Routes>
+      <Route path="/auth" element={<AuthPage />} />
       <Route
         path="/"
-        element={<LandingPage onSchemaLoaded={(s) => setSchema(s)} />}
+        element={
+          <LandingPage
+            onSchemaLoaded={(s) => setSchema(s)}
+            onConversationLoaded={(s, d) => { setSchema(s); setDialect(d) }}
+          />
+        }
       />
       <Route
         path="/schema"
@@ -34,6 +53,7 @@ export default function App() {
         }
       />
       <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+      </Routes>
+    </ConversationProvider>
   )
 }

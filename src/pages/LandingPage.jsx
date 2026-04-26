@@ -1,16 +1,38 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Upload, FileCode, AlertCircle, ArrowRight } from 'lucide-react'
+import { Upload, FileCode, AlertCircle, ArrowRight, MessageSquare, Loader } from 'lucide-react'
 import { parseSchemaFile } from '../lib/schemaParser'
+import { useAuth } from '../context/AuthContext'
+import { useConversation } from '../context/ConversationContext'
 
 const ACCEPTED = '.sql,.json,.csv'
 
-export default function LandingPage({ onSchemaLoaded }) {
+function mapApiMessages(apiMessages) {
+  return (apiMessages || []).map(m => ({
+    id: m.id,
+    role: m.role,
+    text: m.content,
+    query: m.sql_query || null,
+  }))
+}
+
+export default function LandingPage({ onSchemaLoaded, onConversationLoaded }) {
   const navigate = useNavigate()
   const inputRef = useRef(null)
+  const { isLoggedIn } = useAuth()
+  const { conversations, loadConversations, loadConversation, switchConversation } = useConversation()
+
   const [dragging, setDragging] = useState(false)
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [convsLoading, setConvsLoading] = useState(false)
+  const [resuming, setResuming] = useState(null) // conversation id being loaded
+
+  useEffect(() => {
+    if (!isLoggedIn) return
+    setConvsLoading(true)
+    loadConversations().finally(() => setConvsLoading(false))
+  }, [isLoggedIn])
 
   async function handleFile(file) {
     if (!file) return
@@ -40,9 +62,30 @@ export default function LandingPage({ onSchemaLoaded }) {
     navigate('/schema')
   }
 
+  async function handleResumeConversation(conversationId) {
+    setResuming(conversationId)
+    setError(null)
+    try {
+      const data = await loadConversation(conversationId)
+      const schema = (data.schema || []).map(t => ({
+        ...t,
+        columns: (t.columns || []).filter(Boolean),
+      }))
+      const dialect = data.conversation.dialect || 'PostgreSQL'
+      const restoredMessages = mapApiMessages(data.messages)
+
+      onConversationLoaded(schema, dialect)
+      switchConversation(conversationId)
+      navigate('/chat', { state: { restoredMessages, conversationName: data.conversation.name } })
+    } catch (err) {
+      setError('Failed to load conversation. Please try again.')
+    } finally {
+      setResuming(null)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
-      {/* Hero */}
       <main className="flex-1 flex flex-col items-center justify-center px-4 py-16">
         <div className="max-w-xl w-full text-center mb-10">
           <button
@@ -106,7 +149,6 @@ export default function LandingPage({ onSchemaLoaded }) {
             )}
           </div>
 
-          {/* Error state */}
           {error && (
             <div className="flex items-start gap-3 rounded-xl bg-red-50 border border-red-200 px-4 py-3 animate-in">
               <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
@@ -114,14 +156,12 @@ export default function LandingPage({ onSchemaLoaded }) {
             </div>
           )}
 
-          {/* Divider */}
           <div className="flex items-center gap-3">
             <div className="flex-1 h-px bg-slate-200" />
             <span className="text-xs text-slate-400 font-medium">or</span>
             <div className="flex-1 h-px bg-slate-200" />
           </div>
 
-          {/* Manual entry */}
           <button
             onClick={handleManual}
             className="w-full flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-3.5 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:border-slate-400 transition-all schema-accent"
@@ -132,8 +172,69 @@ export default function LandingPage({ onSchemaLoaded }) {
           </button>
         </div>
 
-        {/* Supported formats note */}
-        <p className="mt-8 text-xs text-slate-400 text-center">
+        {/* Previous conversations (logged in) or sign-in prompt (guest) */}
+        <div className="max-w-xl w-full mt-6">
+          {isLoggedIn ? (
+            convsLoading ? (
+              <div className="flex items-center justify-center gap-2 py-3 text-xs text-slate-400">
+                <Loader className="w-3 h-3 animate-spin" />
+                Loading conversations...
+              </div>
+            ) : conversations.length > 0 ? (
+              <div>
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 text-center">
+                  Continue a conversation
+                </p>
+                <div className="space-y-2">
+                  {conversations.map(conv => (
+                    <button
+                      key={conv.id}
+                      onClick={() => handleResumeConversation(conv.id)}
+                      disabled={!!resuming}
+                      className="w-full flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-left hover:border-indigo-300 hover:bg-indigo-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {resuming === conv.id ? (
+                        <Loader className="w-4 h-4 text-indigo-500 animate-spin shrink-0" />
+                      ) : (
+                        <MessageSquare className="w-4 h-4 text-slate-400 shrink-0" />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-slate-700 truncate">{conv.name}</p>
+                        <p className="text-xs text-slate-400">
+                          {conv.dialect} · {conv.message_count} message{conv.message_count !== 1 ? 's' : ''}
+                        </p>
+                      </div>
+                      <ArrowRight className="w-4 h-4 text-slate-300 shrink-0" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <p className="text-xs text-slate-400 text-center">
+                No saved conversations yet. Start a new one above.
+              </p>
+            )
+          ) : (
+            <p className="text-xs text-slate-500 text-center">
+              Have an account?{' '}
+              <button
+                onClick={() => navigate('/auth')}
+                className="text-indigo-600 hover:text-indigo-700 font-medium transition-colors"
+              >
+                Sign in
+              </button>
+              {' '}or{' '}
+              <button
+                onClick={() => navigate('/auth')}
+                className="text-indigo-600 hover:text-indigo-700 font-medium transition-colors"
+              >
+                Sign up
+              </button>
+            </p>
+          )}
+        </div>
+
+        <p className="mt-4 text-xs text-slate-400 text-center">
           Supports <span className="font-medium text-slate-500">CREATE TABLE</span> SQL,
           structured JSON, and CSV exports from most DB tools
         </p>
