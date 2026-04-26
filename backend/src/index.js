@@ -1,7 +1,12 @@
 require('dotenv').config()
+const path = require('path')
 const express = require('express')
 const cors = require('cors')
+const pool = require('./lib/db')
 const apiRoutes = require('./routes/api')
+const authRoutes = require('./routes/auth')
+const conversationRoutes = require('./routes/conversations')
+const adminRoutes = require('./routes/admin')
 
 const app = express()
 const PORT = process.env.PORT || 5000
@@ -13,12 +18,29 @@ app.use(cors({
 }))
 app.use(express.json())
 
-// Health check
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok' })
+// Health check with DB verification
+app.get('/health', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT NOW()')
+    res.json({
+      status: 'ok',
+      database: 'connected',
+      timestamp: result.rows[0].now
+    })
+  } catch (err) {
+    console.error('Database connection error:', err)
+    res.status(500).json({
+      status: 'error',
+      database: 'disconnected',
+      error: err.message
+    })
+  }
 })
 
 // API routes
+app.use('/api/auth', authRoutes)
+app.use('/api/conversations', conversationRoutes)
+app.use('/api/admin', adminRoutes)
 app.use('/api', apiRoutes)
 
 // Error handling middleware
@@ -34,4 +56,5 @@ app.use((req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`)
+  console.log(`Test database: http://localhost:${PORT}/health`)
 })
