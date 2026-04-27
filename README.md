@@ -61,7 +61,7 @@ An intelligent SQL query assistant powered by AI that converts natural language 
 
 ```bash
 # 1. Clone repository
-git clone https://github.com/yourusername/querva.git
+git clone https://github.com/NitinMoturu72/Querva.git
 cd querva
 
 # 2. Setup frontend
@@ -276,8 +276,6 @@ PRs can't merge without passing pipeline! 🔒
 
 ## Performance Optimizations
 
-- ⚡ React lazy loading with route splitting
-- 🗜️ Docker multi-stage builds reduce image size
 - 💾 PostgreSQL query optimization with indexes
 - 🔄 Conversation history limited to 5 messages for context
 - 📦 Rate limiting prevents abuse
