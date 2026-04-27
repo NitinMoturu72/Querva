@@ -44,10 +44,10 @@ pipeline {
             }
             steps {
                 echo 'Deploying to EC2...'
-                sshagent(['EC2_SSH_KEY']) {
+                sshagent(['ec2-ssh-key']) {
                     sh '''
                         ssh -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST "
-                            cd /home/ubuntu/app &&
+                            cd /home/ubuntu/app/Querva &&
                             git pull origin main &&
                             docker-compose down &&
                             docker-compose build --no-cache &&
@@ -64,7 +64,7 @@ pipeline {
             }
             steps {
                 echo 'Running health checks...'
-                sshagent(['EC2_SSH_KEY']) {
+                sshagent(['ec2-ssh-key']) {
                     sh '''
                         sleep 15
                         ssh -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST "
@@ -90,7 +90,9 @@ pipeline {
             echo 'Pipeline failed!'
         }
         always {
-            sh 'docker system prune -f'
+            node('built-in') {
+                sh 'docker system prune -f'
+            }
         }
     }
 }
