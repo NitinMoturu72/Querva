@@ -58,9 +58,6 @@ pipeline {
         }
 
         stage('Deploy to EC2') {
-            when {
-                branch 'main'
-            }
             steps {
                 echo 'Deploying to EC2...'
                 sshagent(['ec2-ssh-key']) {
@@ -78,9 +75,6 @@ pipeline {
         }
 
         stage('Health Check') {
-            when {
-                branch 'main'
-            }
             steps {
                 echo 'Running health checks...'
                 sshagent(['ec2-ssh-key']) {
