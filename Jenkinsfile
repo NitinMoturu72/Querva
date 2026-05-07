@@ -61,34 +61,31 @@ pipeline {
             steps {
                 echo 'Deploying to EC2...'
                 sh '''
-                        cd /home/ubuntu/app/Querva &&
-                        git pull origin main &&
-                        docker-compose down &&
-                        docker-compose build --no-cache &&
-                        docker-compose up -d
-                        "
-                    '''
-                }
+                    cd /home/ubuntu/app/Querva
+                    git pull origin main
+                    docker-compose down
+                    docker-compose build --no-cache
+                    docker-compose up -d
+                '''
             }
         }
 
         stage('Health Check') {
             steps {
                 echo 'Running health checks...'
-                    sh '''
-                        sleep 15
-                        STATUS=\$(curl -s -o /dev/null -w '%{http_code}' http://localhost:5000/health)
-                        echo Backend status: \$STATUS
-                        if [ \"\$STATUS\" != \"200\" ]; then
-                            echo Health check failed
-                            exit 1
-                        fi
-                        echo All checks passed
-                        "
-                    '''
-                }
+                sh '''
+                    sleep 15
+                    STATUS=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:5000/health)
+                    echo Backend status: $STATUS
+                    if [ "$STATUS" != "200" ]; then
+                        echo Health check failed
+                        exit 1
+                    fi
+                    echo All checks passed
+                '''
             }
         }
+    }
 
     post {
         success {
@@ -107,3 +104,4 @@ pipeline {
             }
         }
     }
+}
