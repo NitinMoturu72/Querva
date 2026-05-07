@@ -5,10 +5,12 @@ const pool = require('../lib/db')
  */
 async function setupTestDatabase() {
   try {
+
+    await pool.query(`CREATE EXTENSION IF NOT EXISTS "pgcrypto"`)
     // Users table
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
-        id SERIAL PRIMARY KEY,
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         email VARCHAR(255) UNIQUE NOT NULL,
         password VARCHAR(255) NOT NULL,
         name VARCHAR(255),
@@ -20,8 +22,8 @@ async function setupTestDatabase() {
     // Conversations table
     await pool.query(`
       CREATE TABLE IF NOT EXISTS conversations (
-        id SERIAL PRIMARY KEY,
-        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         name VARCHAR(255) NOT NULL,
         dialect VARCHAR(50),
         created_at TIMESTAMP DEFAULT NOW(),
@@ -32,8 +34,8 @@ async function setupTestDatabase() {
     // Schema tables
     await pool.query(`
       CREATE TABLE IF NOT EXISTS schema_tables (
-        id SERIAL PRIMARY KEY,
-        conversation_id INTEGER NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        conversation_id UUID NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
         name VARCHAR(255) NOT NULL,
         sort_order INTEGER DEFAULT 0
       )
@@ -42,8 +44,8 @@ async function setupTestDatabase() {
     // Columns table
     await pool.query(`
       CREATE TABLE IF NOT EXISTS columns (
-        id SERIAL PRIMARY KEY,
-        table_id INTEGER NOT NULL REFERENCES schema_tables(id) ON DELETE CASCADE,
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        table_id UUID NOT NULL REFERENCES schema_tables(id) ON DELETE CASCADE,
         name VARCHAR(255) NOT NULL,
         type VARCHAR(255) NOT NULL,
         nullable BOOLEAN DEFAULT true,
@@ -55,8 +57,8 @@ async function setupTestDatabase() {
     // Column references (FK)
     await pool.query(`
       CREATE TABLE IF NOT EXISTS column_references (
-        id SERIAL PRIMARY KEY,
-        column_id INTEGER NOT NULL REFERENCES columns(id) ON DELETE CASCADE,
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        column_id UUID NOT NULL REFERENCES columns(id) ON DELETE CASCADE,
         referenced_table VARCHAR(255) NOT NULL,
         referenced_column VARCHAR(255) NOT NULL
       )
@@ -65,8 +67,8 @@ async function setupTestDatabase() {
     // Messages table
     await pool.query(`
       CREATE TABLE IF NOT EXISTS messages (
-        id SERIAL PRIMARY KEY,
-        conversation_id INTEGER NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        conversation_id UUID NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
         role VARCHAR(50) NOT NULL,
         content TEXT,
         sql_query TEXT,
@@ -77,8 +79,8 @@ async function setupTestDatabase() {
     // Rate limit log
     await pool.query(`
       CREATE TABLE IF NOT EXISTS rate_limit_log (
-        id SERIAL PRIMARY KEY,
-        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         endpoint VARCHAR(255),
         tokens_used INTEGER DEFAULT 0,
         created_at TIMESTAMP DEFAULT NOW()
