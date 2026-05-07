@@ -60,14 +60,12 @@ pipeline {
         stage('Deploy to EC2') {
             steps {
                 echo 'Deploying to EC2...'
-                sshagent(['ec2-ssh-key']) {
-                    sh '''
-                        ssh -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST "
-                            cd /home/ubuntu/app/Querva &&
-                            git pull origin main &&
-                            docker-compose down &&
-                            docker-compose build --no-cache &&
-                            docker-compose up -d
+                sh '''
+                        cd /home/ubuntu/app/Querva &&
+                        git pull origin main &&
+                        docker-compose down &&
+                        docker-compose build --no-cache &&
+                        docker-compose up -d
                         "
                     '''
                 }
@@ -77,17 +75,15 @@ pipeline {
         stage('Health Check') {
             steps {
                 echo 'Running health checks...'
-                sshagent(['ec2-ssh-key']) {
                     sh '''
                         sleep 15
-                        ssh -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST "
-                            STATUS=\$(curl -s -o /dev/null -w '%{http_code}' http://localhost:5000/health)
-                            echo Backend status: \$STATUS
-                            if [ \"\$STATUS\" != \"200\" ]; then
-                                echo Health check failed
-                                exit 1
-                            fi
-                            echo All checks passed
+                        STATUS=\$(curl -s -o /dev/null -w '%{http_code}' http://localhost:5000/health)
+                        echo Backend status: \$STATUS
+                        if [ \"\$STATUS\" != \"200\" ]; then
+                            echo Health check failed
+                            exit 1
+                        fi
+                        echo All checks passed
                         "
                     '''
                 }
