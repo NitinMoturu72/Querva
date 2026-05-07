@@ -62,6 +62,7 @@ pipeline {
                 echo 'Deploying to EC2...'
                 sh '''
                     cd /home/ubuntu/app/Querva
+                    git reset --hard HEAD
                     git pull origin main
                     docker-compose down
                     docker-compose build --no-cache
