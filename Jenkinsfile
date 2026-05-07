@@ -25,7 +25,6 @@ pipeline {
             steps {
                 echo 'Running tests...'
                 sh '''
-                    # Start a temporary postgres container for tests
                     docker run -d \
                         --name test-postgres \
                         -e POSTGRES_USER=postgres \
@@ -34,10 +33,8 @@ pipeline {
                         -p 5432:5432 \
                         postgres:15-alpine
 
-                    # Wait for postgres to be ready
                     sleep 5
 
-                    # Run tests with test database credentials
                     cd backend
                     DB_HOST=localhost \
                     DB_PORT=5432 \
@@ -47,7 +44,6 @@ pipeline {
                     JWT_SECRET=test-secret-key \
                     npm test -- --watchAll=false
 
-                    # Cleanup
                     docker stop test-postgres
                     docker rm test-postgres
                 '''
@@ -115,9 +111,9 @@ pipeline {
         always {
             node('built-in') {
                 sh '''
-                docker stop test-postgres 2>/dev/null || true
-                docker rm test-postgres 2>/dev/null || true
-                docker system prune -f
+                    docker stop test-postgres 2>/dev/null || true
+                    docker rm test-postgres 2>/dev/null || true
+                    docker system prune -f
                 '''
             }
         }
