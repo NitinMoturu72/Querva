@@ -14,7 +14,7 @@ export function AuthProvider({ children }) {
       return
     }
 
-    fetch('http://localhost:5000/api/auth/me', {
+    fetch('/api/auth/me', {
       headers: { Authorization: `Bearer ${savedToken}` },
     })
       .then(res => {
@@ -32,7 +32,7 @@ export function AuthProvider({ children }) {
   }, [])
 
   async function register(email, password, name) {
-    const res = await fetch('http://localhost:5000/api/auth/register', {
+    const res = await fetch('/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password, name }),
@@ -51,7 +51,7 @@ export function AuthProvider({ children }) {
   }
 
   async function login(email, password) {
-    const res = await fetch('http://localhost:5000/api/auth/login', {
+    const res = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
