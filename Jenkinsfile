@@ -30,14 +30,14 @@ pipeline {
                         -e POSTGRES_USER=postgres \
                         -e POSTGRES_PASSWORD=postgres \
                         -e POSTGRES_DB=querva_test \
-                        -p 5432:5432 \
+                        -p 5433:5432 \
                         postgres:15-alpine
 
                     sleep 5
 
                     cd backend
                     DB_HOST=localhost \
-                    DB_PORT=5432 \
+                    DB_PORT=5433 \
                     DB_NAME=querva_test \
                     DB_USER=postgres \
                     DB_PASSWORD=postgres \
